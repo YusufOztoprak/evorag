@@ -24,4 +24,7 @@ def split_into_chunks(
         content = _ENCODING.decode(window)
         chunks.append(Chunk(document_id=document_id,index=index, content=content))
 
+        if start + chunk_size >= len(tokens):
+            break
+
     return chunks
