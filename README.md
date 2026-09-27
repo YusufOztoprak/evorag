@@ -151,3 +151,7 @@ Use cases are tested against `FakeEmbeddingProvider` and `InMemoryChunkStore`, s
 - HNSW index for faster vector search
 - Integration tests with Testcontainers and a CI pipeline (GitHub Actions)
 - Retrieval evaluation with Ragas to calibrate chunk size and threshold
+
+## License
+
+[MIT](LICENSE)
