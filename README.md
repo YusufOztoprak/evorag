@@ -2,7 +2,7 @@
 
 A retrieval service for RAG (Retrieval-Augmented Generation), written in Python with Clean Architecture.
 
-evorag ingests documents, splits them into overlapping token-based chunks, embeds them with OpenAI, stores the vectors in PostgreSQL + pgvector, and returns the most relevant chunks for a query. Answer generation is intentionally out of scope: evorag is the Python retrieval side of a hybrid system where [rag-service](https://github.com/YusufOztoprak) (NestJS) handles the public API and generation.
+evorag ingests documents, splits them into overlapping token-based chunks, embeds them with OpenAI, stores the vectors in PostgreSQL + pgvector, and returns the most relevant chunks for a query. Answer generation is intentionally out of scope: evorag is the Python retrieval side of a hybrid system where [rag-service](https://github.com/YusufOztoprak/rag-service) (NestJS) handles the public API and generation.
 
 ## Features
 
