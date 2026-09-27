@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     embedding_model: str = "text-embedding-3-small"
     embedding_dimensions: int = 1536
 
-    min_score: float = 0.75
+    min_score: float = 0.2
 
     @property
     def database_url(self) -> str:
