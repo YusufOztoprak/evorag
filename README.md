@@ -9,6 +9,7 @@ evorag ingests documents, splits them into overlapping token-based chunks, embed
 - **Document ingestion:** token-based chunking with overlap (tiktoken), batched embedding in a single API call, transactional writes
 - **Semantic search:** cosine similarity over pgvector with a configurable relevance threshold
 - **Clean Architecture:** use cases depend only on ports; OpenAI, PostgreSQL and FastAPI are replaceable adapters
+- **Structured logging:** one JSON line per event, with request ID, latency and token usage
 - **Tested without infrastructure:** use cases are unit-tested with in-memory fakes; no database or API key required
 
 ## Architecture
@@ -47,8 +48,9 @@ src/evorag/
   ingestion/       IngestDocument use case, chunking, ChunkWriter port
   retrieval/       SearchChunks use case, ChunkSearcher port
   shared/          EmbeddingProvider port
+  observability/   JSON log formatter, per-request context (request ID, token usage)
   adapters/
-    http/          FastAPI routes and request/response schemas
+    http/          FastAPI routes, request/response schemas, request logging middleware
     openai_embeddings.py
     pgvector_store.py   SQLAlchemy model and domain mapping
   config.py        Settings loaded from .env (pydantic-settings)
@@ -59,7 +61,7 @@ alembic/           Database migrations
 
 ## Tech stack
 
-Python 3.12 · FastAPI · Pydantic v2 · SQLAlchemy 2.0 (async) · asyncpg · Alembic · PostgreSQL 17 + pgvector · OpenAI `text-embedding-3-small` · tiktoken · pytest · uv · Docker Compose
+Python 3.12 · FastAPI · Pydantic v2 · SQLAlchemy 2.0 (async) · asyncpg · Alembic · PostgreSQL 17 + pgvector · OpenAI `text-embedding-3-small` · tiktoken · pytest · ruff · uv · Docker Compose
 
 ## Getting started
 
@@ -135,18 +137,37 @@ curl -X POST http://127.0.0.1:8000/search \
 
 **Framework data stays at the edge.** pgvector returns numpy arrays; the adapter converts them to plain lists before they reach the domain. The HTTP layer returns `SearchHit` DTOs, not entities, so embeddings never leak into API responses.
 
+## Observability
+
+Every request is logged as JSON Lines (one JSON object per line), so logs can be filtered and aggregated by any log tool. Logging is built on the standard library only.
+
+- **Request ID:** taken from the incoming `X-Request-ID` header (so calls from rag-service can be traced across both services) or generated; returned in the response header and attached to every log line via `contextvars`.
+- **Latency:** total request time, plus a separate measurement for each OpenAI embedding call.
+- **Token usage:** embedding tokens are summed per request without passing anything through the use cases; the domain and use-case layers stay free of logging concerns.
+
+Example log lines for one `POST /documents` request (`ts`, `level` and `logger` fields omitted):
+
+```json
+{"event": "embedding.created", "request_id": "2a2c1c38...", "model": "text-embedding-3-small", "inputs": 1, "tokens": 18, "latency_ms": 390.19}
+```
+
+```json
+{"event": "request.completed", "request_id": "2a2c1c38...", "method": "POST", "path": "/documents", "status": 201, "latency_ms": 439.52, "embedding_tokens": 18}
+```
+
+Separating the two latencies shows where time goes: in early measurements the OpenAI call took 89–97% of the total request time, while evorag's own work stayed at roughly 50 ms.
+
 ## Testing
 
 ```bash
 uv run pytest -v
 ```
 
-Use cases are tested against `FakeEmbeddingProvider` and `InMemoryChunkStore`, so the suite runs in well under a second without Docker or an API key.
+Use cases are tested against `FakeEmbeddingProvider` and `InMemoryChunkStore`, so the suite runs in well under a second without Docker or an API key. Observability is tested through a minimal FastAPI app with `TestClient` and `caplog`: request ID generation and propagation, token aggregation, and JSON formatting.
 
 ## Roadmap
 
-- Structured logging with request id, latency and token usage (structlog)
-- Retries and fallbacks for OpenAI calls (tenacity)
+- Timeouts, retries and fallbacks for OpenAI calls (tenacity)
 - RabbitMQ consumer as a second entry point for asynchronous ingestion
 - HNSW index for faster vector search
 - Integration tests with Testcontainers and a CI pipeline (GitHub Actions)
