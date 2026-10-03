@@ -5,17 +5,20 @@ from fastapi import FastAPI
 from openai import AsyncOpenAI
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from evorag.adapters.http.middleware import log_requests
 from evorag.adapters.http.routes import router
 from evorag.adapters.openai_embeddings import OpenAIEmbeddingProvider
 from evorag.adapters.pgvector_store import PgVectorChunkStore
 from evorag.config import Settings
 from evorag.ingestion.ingest_document import IngestDocument
+from evorag.observability.logging import configure_logging
 from evorag.retrieval.search_chunks import SearchChunks
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = Settings()
+    configure_logging()
 
     engine = create_async_engine(settings.database_url)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
@@ -39,3 +42,4 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="evorag", lifespan=lifespan)
 app.include_router(router)
+app.middleware("http")(log_requests)
