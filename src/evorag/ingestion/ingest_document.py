@@ -1,9 +1,10 @@
-from dataclasses import dataclass,replace
-from uuid import UUID,uuid4
+from dataclasses import dataclass, replace
+from uuid import UUID, uuid4
 
 from evorag.ingestion.chunking import split_into_chunks
 from evorag.ingestion.ports import ChunkWriter
 from evorag.shared.ports import EmbeddingProvider
+
 
 @dataclass(frozen=True)
 class IngestResult:
