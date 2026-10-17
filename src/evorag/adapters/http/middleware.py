@@ -4,13 +4,14 @@ import uuid
 
 from fastapi import Request, Response
 
-from evorag.observability.context import set_request_id
+from evorag.observability.context import set_request_id, start_metrics
 
 logger = logging.getLogger(__name__)
 
 async def log_requests(request: Request, call_next) -> Response:
     request_id = request.headers.get("x-request-id") or uuid.uuid4().hex
     set_request_id(request_id)
+    metrics = start_metrics()
 
     started = time.perf_counter()
     response = await call_next(request)
@@ -25,6 +26,7 @@ async def log_requests(request: Request, call_next) -> Response:
                 "path": request.url.path,
                 "status": response.status_code,
                 "latency_ms": latency_ms,
+                "embedding_tokens": metrics.embedding_tokens,
             }
         },
     )
