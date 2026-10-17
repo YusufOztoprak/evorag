@@ -1,7 +1,7 @@
 [project]
 name = "evorag"
 version = "0.1.0"
-description = "Add your description here"
+description = "Retrieval service for RAG: ingestion and semantic search over pgvector"
 readme = "README.md"
 license = "MIT"
 authors = [
@@ -17,11 +17,7 @@ dependencies = [
     "pydantic-settings>=2.15.0",
     "sqlalchemy[asyncio]>=2.1.0",
     "tiktoken>=0.14.0",
-    "vector>=1.9.0",
 ]
-
-[project.scripts]
-evorag = "evorag:main"
 
 [build-system]
 requires = ["uv_build>=0.12.19,<0.13.0"]
