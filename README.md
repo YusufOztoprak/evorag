@@ -2,7 +2,7 @@
 
 A retrieval service for RAG (Retrieval-Augmented Generation), written in Python with Clean Architecture.
 
-evorag ingests documents, splits them into overlapping token-based chunks, embeds them with OpenAI, stores the vectors in PostgreSQL + pgvector, and returns the most relevant chunks for a query. Answer generation is intentionally out of scope: evorag is the Python retrieval side of a hybrid system where [rag-service](https://github.com/YusufOztoprak/rag-service) (NestJS) handles the public API and generation.
+evorag ingests documents, splits them into overlapping token-based chunks, embeds them with OpenAI, stores the vectors in PostgreSQL + pgvector, and returns the most relevant chunks for a query. Answer generation is intentionally out of scope. evorag is planned as the Python retrieval side of a hybrid system with [rag-service](https://github.com/YusufOztoprak/rag-service) (NestJS) handling the public API and generation; the two are not connected yet.
 
 ## Features
 
@@ -141,7 +141,7 @@ curl -X POST http://127.0.0.1:8000/search \
 
 Every request is logged as JSON Lines (one JSON object per line), so logs can be filtered and aggregated by any log tool. Logging is built on the standard library only.
 
-- **Request ID:** taken from the incoming `X-Request-ID` header (so calls from rag-service can be traced across both services) or generated; returned in the response header and attached to every log line via `contextvars`.
+- **Request ID:** taken from the incoming `X-Request-ID` header (so once rag-service calls evorag, requests can be traced across both services) or generated; returned in the response header and attached to every log line via `contextvars`.
 - **Latency:** total request time, plus a separate measurement for each OpenAI embedding call.
 - **Token usage:** embedding tokens are summed per request without passing anything through the use cases; the domain and use-case layers stay free of logging concerns.
 
