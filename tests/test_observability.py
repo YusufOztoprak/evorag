@@ -1,11 +1,12 @@
 import json
 import logging
 
+from decimal import Decimal
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from evorag.adapters.http.middleware import log_requests
-from evorag.observability.context import add_embedding_tokens
+from evorag.observability.context import add_embedding_tokens, add_embedding_cost_usd
 from evorag.observability.logging import JsonFormatter
 
 
@@ -15,6 +16,8 @@ def make_app():
 
     @app.get("/fake")
     async def fake() -> dict[str, str]:
+        add_embedding_cost_usd(Decimal("0.0000006"))
+        add_embedding_cost_usd(Decimal("0.00000024"))
         add_embedding_tokens(30)
         add_embedding_tokens(12)
         return {"ok": "yes"}
@@ -72,3 +75,4 @@ def test_middleware_sums_embedding_tokens(caplog):
     [record] = [r for r in caplog.records if r.getMessage() == "request.completed"]
 
     assert record.fields["embedding_tokens"] == 42
+    assert record.fields["embedding_cost_usd"] == Decimal("0.00000084")
