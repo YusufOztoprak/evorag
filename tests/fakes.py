@@ -2,6 +2,7 @@ import math
 
 from evorag.domain.chunk import Chunk
 
+
 class FakeEmbeddingProvider:
     def __init__(self, vectors: dict[str, list[float]] | None = None) -> None:
         self.vectors = vectors or {}

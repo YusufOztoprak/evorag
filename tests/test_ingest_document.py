@@ -1,6 +1,5 @@
 import pytest
 
-from evorag.domain.chunk import Chunk
 from evorag.ingestion.ingest_document import IngestDocument
 from tests.fakes import FakeEmbeddingProvider, InMemoryChunkStore
 

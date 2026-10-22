@@ -1,12 +1,13 @@
-import logging
 import json
+import logging
 
-from fastapi.testclient import TestClient
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 from evorag.adapters.http.middleware import log_requests
 from evorag.observability.context import add_embedding_tokens
 from evorag.observability.logging import JsonFormatter
+
 
 def make_app():
     app = FastAPI()
