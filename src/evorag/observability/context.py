@@ -1,5 +1,6 @@
 from contextvars import ContextVar
 from dataclasses import dataclass
+from decimal import Decimal
 
 _request_id: ContextVar[str | None] = ContextVar("request_id", default=None)
 
@@ -7,6 +8,7 @@ _request_id: ContextVar[str | None] = ContextVar("request_id", default=None)
 @dataclass
 class RequestMetrics:
     embedding_tokens: int = 0
+    embedding_cost_usd: Decimal = Decimal("0")
 
 _metrics: ContextVar[RequestMetrics | None] = ContextVar("metrics", default=None)
 
@@ -26,3 +28,10 @@ def add_embedding_tokens(tokens: int) -> None:
     if metrics is None:
         return
     metrics.embedding_tokens += tokens
+
+def add_embedding_cost_usd(cost: Decimal) -> None:
+    metrics = _metrics.get()
+    if metrics is None or cost is None:
+        return
+    metrics.embedding_cost_usd += cost
+

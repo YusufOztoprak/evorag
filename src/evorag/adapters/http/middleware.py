@@ -27,6 +27,7 @@ async def log_requests(request: Request, call_next) -> Response:
                 "status": response.status_code,
                 "latency_ms": latency_ms,
                 "embedding_tokens": metrics.embedding_tokens,
+                "embedding_cost_usd": metrics.embedding_cost_usd,
             }
         },
     )

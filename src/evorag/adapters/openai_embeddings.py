@@ -3,7 +3,8 @@ import time
 
 from openai import AsyncOpenAI
 
-from evorag.observability.context import add_embedding_tokens
+from evorag.observability.context import add_embedding_tokens, add_embedding_cost_usd
+from evorag.observability.pricing import embedding_cost_usd
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,8 @@ class OpenAIEmbeddingProvider:
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
 
         tokens = response.usage.total_tokens
+        cost = embedding_cost_usd(self._model, tokens)
+        add_embedding_cost_usd(cost)
         add_embedding_tokens(tokens)
         logger.info(
             "embedding.created",
@@ -33,6 +36,7 @@ class OpenAIEmbeddingProvider:
                 "model": self._model,
                 "inputs": len(texts),
                 "tokens": tokens,
+                "cost_usd": cost,
                 "latency_ms": latency_ms,
             }}
         )
