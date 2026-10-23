@@ -13,22 +13,26 @@ async def log_requests(request: Request, call_next) -> Response:
     set_request_id(request_id)
     metrics = start_metrics()
 
+    status_code = 500
     started = time.perf_counter()
-    response = await call_next(request)
-    latency_ms = round((time.perf_counter() - started) * 1000, 2)
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        response.headers["x-request-id"] = request_id
+        return response
+    finally:
+        latency_ms = round((time.perf_counter() - started) * 1000, 2)
+        logger.info(
+            "request.completed",
+            extra={
+                "fields": {
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status": status_code,
+                    "latency_ms": latency_ms,
+                    "embedding_tokens": metrics.embedding_tokens,
+                    "embedding_cost_usd": metrics.embedding_cost_usd,
+                }
+            },
 
-    response.headers["x-request-id"] = request_id
-    logger.info(
-        "request.completed",
-        extra={
-            "fields": {
-                "method": request.method,
-                "path": request.url.path,
-                "status": response.status_code,
-                "latency_ms": latency_ms,
-                "embedding_tokens": metrics.embedding_tokens,
-                "embedding_cost_usd": metrics.embedding_cost_usd,
-            }
-        },
-    )
-    return response
+        )

@@ -22,6 +22,11 @@ def make_app():
         add_embedding_tokens(12)
         return {"ok": "yes"}
 
+    @app.get("/boom")
+    async def boom() -> dict[str, str]:
+        add_embedding_tokens(23) # the embedding call succeeded and was paid for...
+        raise RuntimeError("database is down") #...then the database write failed
+
     return app
 
 def test_middleware_generates_request_id():
@@ -76,3 +81,15 @@ def test_middleware_sums_embedding_tokens(caplog):
 
     assert record.fields["embedding_tokens"] == 42
     assert record.fields["embedding_cost_usd"] == Decimal("0.00000084")
+
+def test_middleware_logs_failed_requests(caplog):
+    caplog.set_level(logging.INFO, logger="evorag")
+    client = TestClient(make_app(), raise_server_exceptions=False)
+
+    response = client.get("/boom")
+
+    assert response.status_code == 500
+    [record] = [r for r in caplog.records if r.getMessage() == "request.completed"]
+    assert record.fields["status"] == 500
+    assert record.fields["embedding_tokens"] == 23
+
