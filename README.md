@@ -141,21 +141,22 @@ curl -X POST http://127.0.0.1:8000/search \
 
 Every request is logged as JSON Lines (one JSON object per line), so logs can be filtered and aggregated by any log tool. Logging is built on the standard library only.
 
-- **Request ID:** taken from the incoming `X-Request-ID` header (so once rag-service calls evorag, requests can be traced across both services) or generated; returned in the response header and attached to every log line via `contextvars`.
+- **Request ID:** taken from the incoming `X-Request-ID` header (so calls from rag-service can be traced across both services) or generated; returned in the response header and attached to every log line via `contextvars`.
 - **Latency:** total request time, plus a separate measurement for each OpenAI embedding call.
-- **Token usage:** embedding tokens are summed per request without passing anything through the use cases; the domain and use-case layers stay free of logging concerns.
+- **Token usage and cost:** embedding tokens and their USD cost are summed per request without passing anything through the use cases. Cost is computed with `Decimal` from a pricing table that records its source and date, and an unknown model yields no cost instead of failing the request.
+- **Failed requests are logged too:** the summary line is written in a `finally` block, so a request that fails after a paid embedding call still shows its status and cost.
 
 Example log lines for one `POST /documents` request (`ts`, `level` and `logger` fields omitted):
 
 ```json
-{"event": "embedding.created", "request_id": "2a2c1c38...", "model": "text-embedding-3-small", "inputs": 1, "tokens": 18, "latency_ms": 390.19}
+{"event": "embedding.created", "request_id": "1105818e...", "model": "text-embedding-3-small", "inputs": 1, "tokens": 23, "cost_usd": 4.6e-07, "latency_ms": 1059.0}
 ```
 
 ```json
-{"event": "request.completed", "request_id": "2a2c1c38...", "method": "POST", "path": "/documents", "status": 201, "latency_ms": 439.52, "embedding_tokens": 18}
+{"event": "request.completed", "request_id": "1105818e...", "method": "POST", "path": "/documents", "status": 201, "latency_ms": 1250.77, "embedding_tokens": 23, "embedding_cost_usd": 4.6e-07}
 ```
 
-Separating the two latencies shows where time goes: in early measurements the OpenAI call took 89–97% of the total request time, while evorag's own work stayed at roughly 50 ms.
+Separating the two latencies shows where time goes: in early measurements the OpenAI call took 89–97% of the total request time, while evorag's own work stayed at roughly 50 ms. On cost, a short document of about 23 tokens costs $0.00000046 to embed, so a million of them would cost about $0.46; embedding is a small fraction of a RAG system's spend compared to answer generation.
 
 ## Testing
 
